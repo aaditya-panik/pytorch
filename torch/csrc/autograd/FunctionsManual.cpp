@@ -71,9 +71,21 @@ Tensor copysign_tensor_self_backward(const Tensor & grad, const Tensor & self, c
   return grad * ratio;
 }
 
-Tensor not_implemented(const char* name) {
-  throw std::runtime_error(
-      std::string("the derivative for '") + name + "' is not implemented");
+template <typename T>
+T not_implemented_base(const char* name, const char* reason) {
+  std::string msg = c10::str("the derivative for '", name, "' is not implemented.");
+  if (strlen(reason) > 0) {
+    msg = c10::str(msg, " ", reason);
+  };
+  throw std::runtime_error(msg);
+}
+
+Tensor not_implemented(const char* name, const char* reason) {
+  return not_implemented_base<Tensor>(name, reason);
+}
+
+std::vector<Tensor> not_implemented_list(const char* name, const char* reason) {
+  return not_implemented_base<std::vector<Tensor>>(name, reason);
 }
 
 Tensor maybe_multiply(const Tensor & t, const Scalar & s) {
