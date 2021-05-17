@@ -2869,14 +2869,40 @@ struct to_ir {
         return std::make_shared<SimpleValue>(v);
       } break;
       case prim::GetAttr: {
-        checkApplyNumInputs(apply, 2);
-        auto obj = emitSugaredExpr(apply.inputs()[0], 1);
-        auto selector = apply.inputs()[1];
+        auto inputs = apply.inputs();
+        auto input_size = inputs.size();
+        std::shared_ptr<SugaredValue> default_value = nullptr;
+
+        if (input_size < 2) {
+          throw ErrorReport(apply)
+            << "getattr expects at least 2 arguments, received " << input_size;
+        }
+        if (input_size == 3) {
+          default_value = emitSugaredExpr(inputs[2], 1);
+        }
+        if (input_size > 3) {
+          throw ErrorReport(apply)
+              << "getattr expects at most 3 arguments, received " << input_size;
+        }
+
+        auto obj = emitSugaredExpr(inputs[0], 1);
+        auto selector = inputs[1];
         if (selector.kind() != TK_STRINGLITERAL) {
           throw ErrorReport(apply)
               << "getattr's second argument must be a string literal";
         }
         const std::string& name = StringLiteral(selector).text();
+
+        if (default_value == nullptr) {
+          return obj->attr(apply.range(), method, name);
+        } else {
+          if (obj->hasAttr(apply.range(), method, name)) {
+            return obj->attr(apply.range(), method, name);
+          } else {
+            return default_value;
+          }
+        }
+
         return obj->attr(apply.range(), method, name);
       }
       case prim::Uninitialized: {

@@ -198,6 +198,13 @@ py::object PythonValue::getattr(
   }
 }
 
+bool PythonValue::hasAttr(
+    const SourceRange& loc,
+    Function& m,
+    const std::string& field) {
+  return py::hasattr(self, field.c_str());
+}
+
 void PythonValue::checkForAddToConstantsError(std::stringstream& ss) {
   auto nn = py::module::import("torch.nn");
   if (py::isinstance(self, nn.attr("ModuleList")) ||
